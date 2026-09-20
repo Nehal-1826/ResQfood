@@ -351,4 +351,18 @@ async function initializeDatabase() {
   return initPromise;
 }
 
-module.exports = { initializeDatabase, getPool, getDbConfig };
+function formatDbError(err, fallback = 'Server error occurred.') {
+  if (!err) return fallback;
+  if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND' || err.code === 'ETIMEDOUT') {
+    return 'Database connection failed. Please ensure DB_HOST or DATABASE_URL is configured in Vercel Environment Variables.';
+  }
+  if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+    return 'Database access denied. Please verify DB_USER and DB_PASSWORD in Vercel settings.';
+  }
+  if (err.code === 'ER_BAD_DB_ERROR') {
+    return 'Database name not found. Please verify DB_NAME in Vercel settings.';
+  }
+  return err.message || fallback;
+}
+
+module.exports = { initializeDatabase, getPool, getDbConfig, formatDbError, hasDbConfig };

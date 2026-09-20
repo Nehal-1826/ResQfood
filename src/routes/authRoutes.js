@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
-const { getPool } = require('../db');
+const { getPool, formatDbError } = require('../db');
 const fs = require('fs');
 const os = require('os');
 const { validateEmailDomain, sendVerificationEmail } = require('../services/emailService');
@@ -270,7 +270,7 @@ router.post('/restaurant/register', async (req, res) => {
     });
   } catch (err) {
     console.error('Restaurant register error:', err);
-    res.status(500).json({ success: false, message: 'Server error during registration.' });
+    res.status(500).json({ success: false, message: formatDbError(err, 'Server error during registration.') });
   }
 });
 
@@ -317,7 +317,7 @@ router.post('/restaurant/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Restaurant login error:', err);
-    res.status(500).json({ success: false, message: 'Server error during login.' });
+    res.status(500).json({ success: false, message: formatDbError(err, 'Server error during login.') });
   }
 });
 
@@ -373,7 +373,7 @@ router.post('/organization/register', async (req, res) => {
     });
   } catch (err) {
     console.error('Organization register error:', err);
-    res.status(500).json({ success: false, message: 'Server error during registration.' });
+    res.status(500).json({ success: false, message: formatDbError(err, 'Server error during registration.') });
   }
 });
 
@@ -420,7 +420,7 @@ router.post('/organization/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Organization login error:', err);
-    res.status(500).json({ success: false, message: 'Server error during login.' });
+    res.status(500).json({ success: false, message: formatDbError(err, 'Server error during login.') });
   }
 });
 
@@ -458,7 +458,7 @@ router.post('/admin/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Admin login error:', err);
-    res.status(500).json({ success: false, message: 'Server error during login.' });
+    res.status(500).json({ success: false, message: formatDbError(err, 'Server error during login.') });
   }
 });
 
@@ -528,7 +528,7 @@ router.post('/volunteer/register', upload.single('license_file'), async (req, re
     });
   } catch (err) {
     console.error('Volunteer register error:', err);
-    res.status(500).json({ success: false, message: 'Server error during registration.' });
+    res.status(500).json({ success: false, message: formatDbError(err, 'Server error during registration.') });
   }
 });
 
@@ -575,7 +575,7 @@ router.post('/volunteer/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Volunteer login error:', err);
-    res.status(500).json({ success: false, message: 'Server error during login.' });
+    res.status(500).json({ success: false, message: formatDbError(err, 'Server error during login.') });
   }
 });
 
