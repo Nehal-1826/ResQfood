@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | ResQfood</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+
+  <div id="toast-container"></div>
+
+  <div class="dashboard-layout">
+    
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__header">
+        <a href="/" class="sidebar__logo">
+          <img src="/images/logo.png" alt="ResQfood Logo">
+        </a>
+        <div class="sidebar__user">
+          <div class="sidebar__avatar" id="userInitial" style="background: linear-gradient(135deg, var(--gray-700), var(--gray-900));">A</div>
+          <div class="sidebar__user-info">
+            <div class="sidebar__user-name" id="userNameLoading"><div class="skeleton" style="height:14px; width:100px;"></div></div>
+            <div class="sidebar__user-name" id="userName" style="display:none;"></div>
+            <div class="sidebar__user-role">Administrator</div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <div class="sidebar__nav-label">Menu</div>
+        <button class="nav-item active" data-target="users">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Manage Users
+        </button>
+      </nav>
+
+      <div class="sidebar__footer">
+        <button class="nav-item" id="logoutBtn" style="color: var(--red-500);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="dashboard-main">
+      <header class="topbar">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <button class="mobile-menu-btn" id="sidebarToggle" style="display: flex;">
+            <span></span><span></span><span></span>
+          </button>
+          <div class="topbar__title">
+            <h4 id="pageTitle">Admin Workspace</h4>
+            <p id="currentDate"></p>
+          </div>
+        </div>
+      </header>
+
+      <div class="dashboard-content">
+        
+        <!-- SECTION VIEW: USERS -->
+        <div id="view-users" class="view-section">
+          
+          <div class="panel">
+            <div class="panel__header">
+              <div>
+                <h4>Registered Restaurants</h4>
+                <p>All restaurants providing surplus food</p>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Registered On</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="restaurantsTable">
+                  <tr><td colspan="6" style="text-align:center; padding: 2rem;"><div class="spinner" style="border-top-color:var(--primary); margin:0 auto; display:block;"></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-top: 2rem;">
+            <div class="panel__header">
+              <div>
+                <h4>Registered Organizations</h4>
+                <p>All NGOs, orphanages, and groups</p>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Registered On</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="organizationsTable">
+                  <tr><td colspan="6" style="text-align:center; padding: 2rem;"><div class="spinner" style="border-top-color:var(--primary); margin:0 auto; display:block;"></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-top: 2rem;">
+            <div class="panel__header">
+              <div>
+                <h4>Registered Volunteers</h4>
+                <p>All delivery volunteers</p>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Registered On</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="volunteersTable">
+                  <tr><td colspan="7" style="text-align:center; padding: 2rem;"><div class="spinner" style="border-top-color:var(--primary); margin:0 auto; display:block;"></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/main.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

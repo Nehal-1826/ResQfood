@@ -1,0 +1,25 @@
+{
+  "rows": [
+    {
+      "food_id": 16,
+      "food_name": "Fruits Salad",
+      "expiry_time": "2026-03-09T15:30:00.000Z",
+      "curr": "2026-03-09T17:47:00.000Z",
+      "status": "available"
+    },
+    {
+      "food_id": 15,
+      "food_name": "Test Pizza",
+      "expiry_time": "2026-03-10T16:30:00.000Z",
+      "curr": "2026-03-09T17:47:00.000Z",
+      "status": "requested"
+    },
+    {
+      "food_id": 8,
+      "food_name": "Pasta",
+      "expiry_time": "2026-03-08T13:30:00.000Z",
+      "curr": "2026-03-09T17:47:00.000Z",
+      "status": "requested"
+    }
+  ]
+}

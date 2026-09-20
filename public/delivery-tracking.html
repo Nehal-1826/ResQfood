@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delivery Tracking | ResQfood</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    body { background: var(--gray-50); min-height: 100vh; display: flex; flex-direction: column; }
+    .tracking-container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; flex: 1; width: 100%; display: grid; grid-template-columns: 1fr 350px; gap: 1.5rem; }
+    @media (max-width: 768px) { .tracking-container { grid-template-columns: 1fr; } }
+    #map { width: 100%; height: 500px; border-radius: 12px; border: 1px solid var(--gray-200); background: var(--gray-100); }
+    .info-panel { background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--gray-200); }
+    .timeline-item { position: relative; padding-left: 24px; margin-bottom: 1.5rem; }
+    .timeline-item::before { content: ''; position: absolute; left: 0; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--gray-300); }
+    .timeline-item::after { content: ''; position: absolute; left: 5px; top: 16px; bottom: -20px; width: 2px; background: var(--gray-200); }
+    .timeline-item:last-child::after { display: none; }
+    .timeline-item.active::before { background: var(--primary); box-shadow: 0 0 0 4px var(--primary-light); }
+    .timeline-item.completed::before { background: var(--green-500); }
+    .eta-box { background: var(--blue-50); border: 1px solid var(--blue-100); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center; }
+    .eta-time { font-size: 2rem; font-weight: bold; color: var(--blue-600); }
+    .distance-text { color: var(--gray-600); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <nav class="navbar" style="background: white; box-shadow: var(--shadow-sm);">
+    <div class="container">
+      <a href="/" class="navbar__logo">
+        <img src="/images/logo.png" alt="ResQfood Logo">
+        <span>Tracking</span>
+      </a>
+      <div class="navbar__actions">
+        <a href="javascript:history.back()" class="btn btn-outline btn-sm">Back</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="tracking-container">
+    <div>
+      <div id="map"></div>
+    </div>
+    
+    <div class="info-panel">
+      <h3 style="margin-bottom: 1rem;">Delivery Status</h3>
+      
+      <div class="eta-box" id="etaBox" style="display:none;">
+        <div style="font-size: 0.9rem; color: var(--gray-600); font-weight: 500;">Estimated Arrival</div>
+        <div class="eta-time" id="etaTime">--:--</div>
+        <div class="distance-text" id="distanceText">Calculating distance...</div>
+      </div>
+
+      <div style="margin-bottom: 2rem;">
+        <h5 style="color: var(--gray-500); font-size: 0.8rem; text-transform: uppercase;">Details</h5>
+        <div style="font-weight: 500; margin-top: 0.5rem;" id="foodName">Loading...</div>
+        <div style="color: var(--gray-600); font-size: 0.9rem;" id="foodQty"></div>
+        
+        <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--gray-100);">
+
+        <div style="font-size: 0.9rem;">
+          <div style="color: var(--gray-500); margin-bottom: 0.2rem;">Volunteer</div>
+          <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem;">
+            <img id="volPhoto" src="/images/default-avatar.png" alt="Volunteer" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gray-200); display: none;">
+            <div>
+              <div style="font-weight: 500;" id="volName">Waiting for assignment...</div>
+              <div style="color: var(--gray-600);" id="volPhone"></div>
+              <div style="color: var(--gray-500); font-size: 0.8rem; margin-top: 0.25rem; display: none;" id="volVehicleDetails">
+                <span id="volVehicleType"></span> • <span id="volVehicleNumber" style="font-weight:500; color:var(--gray-700)"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline" id="timeline">
+        <div class="timeline-item" data-step="Pickup Requested">
+          <div style="font-weight: 500;">Pickup Requested</div>
+          <div style="font-size: 0.8rem; color: var(--gray-500);">Waiting for a volunteer</div>
+        </div>
+        <div class="timeline-item" data-step="Volunteer Assigned">
+          <div style="font-weight: 500;">Volunteer Assigned</div>
+          <div style="font-size: 0.8rem; color: var(--gray-500);">Volunteer is heading to restaurant</div>
+        </div>
+        <div class="timeline-item" data-step="Food Picked Up">
+          <div style="font-weight: 500;">Food Picked Up</div>
+          <div style="font-size: 0.8rem; color: var(--gray-500);">Food collected from restaurant</div>
+        </div>
+        <div class="timeline-item" data-step="On the Way">
+          <div style="font-weight: 500;">On the Way</div>
+          <div style="font-size: 0.8rem; color: var(--gray-500);">Heading to destination</div>
+        </div>
+        <div class="timeline-item" data-step="Delivered">
+          <div style="font-weight: 500;">Delivered</div>
+          <div style="font-size: 0.8rem; color: var(--gray-500);">Food successfully handed over</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const deliveryId = urlParams.get('id');
+
+    let map, directionsService, directionsRenderer, fullRouteRenderer;
+    let restaurantMarker, ngoMarker, volunteerMarker;
+    let socket;
+    let deliveryData = null;
+
+    async function initMap() {
+      if(!deliveryId) return alert('No delivery ID provided.');
+
+      // Fetch maps API key
+      const keyRes = await fetch('/api/config/maps').then(r => r.json());
+      if(keyRes.apiKey) {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${keyRes.apiKey}&callback=mapReady`;
+        script.defer = true;
+        document.head.appendChild(script);
+      } else {
+        document.getElementById('map').innerHTML = '<div style="padding:2rem;text-align:center">Google Maps API key not configured.</div>';
+      }
+
+      fetchDeliveryData();
+    }
+
+    window.mapReady = () => {
+      map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 12,
+        center: { lat: 20.5937, lng: 78.9629 }, // Default India center
+        mapTypeControl: false,
+        streetViewControl: false
+      });
+
+      directionsService = new google.maps.DirectionsService();
+      
+      // Grey baseline for full route
+      fullRouteRenderer = new google.maps.DirectionsRenderer({
+        map,
+        suppressMarkers: true,
+        polylineOptions: { strokeColor: '#94a3b8', strokeOpacity: 0.6, strokeWeight: 4 }
+      });
+
+      // Green active leg
+      directionsRenderer = new google.maps.DirectionsRenderer({
+        map,
+        suppressMarkers: true,
+        polylineOptions: { strokeColor: '#10b981', strokeWeight: 6 }
+      });
+    };
+
+    let watchId = null;
+
+    async function fetchDeliveryData() {
+      try {
+        const res = await fetch(`/api/deliveries/${deliveryId}`).then(r => r.json());
+        if(!res.success) throw new Error(res.message);
+        
+        deliveryData = res.data;
+        updateUI();
+        geocodeAddressesAndPlot();
+        initSocket();
+        checkAndStartTracking();
+      } catch(err) {
+        console.error(err);
+        alert('Failed to load tracking data: ' + err.message);
+      }
+    }
+
+    function checkAndStartTracking() {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return;
+      
+      const user = JSON.parse(userStr);
+      // Only the assigned volunteer should broadcast their location
+      if (user.role === 'volunteer' && user.volunteer_id === deliveryData.volunteer_id) {
+        startLocationTracking(user.volunteer_id);
+      }
+    }
+
+    function startLocationTracking(volunteerId) {
+      if (!navigator.geolocation) {
+        console.warn('Geolocation is not supported by this browser.');
+        return;
+      }
+
+      console.log('🌍 Starting live location tracking for volunteer...');
+      
+      watchId = navigator.geolocation.watchPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          
+          try {
+            const token = localStorage.getItem('token');
+            await fetch('/api/deliveries/update-location', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+              },
+              body: JSON.stringify({
+                delivery_id: deliveryId,
+                volunteer_id: volunteerId,
+                latitude: lat,
+                longitude: lng
+              })
+            });
+            console.log(`📍 Location pushed: ${lat}, ${lng}`);
+          } catch (err) {
+            console.error('Failed to update location:', err);
+          }
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 10000,
+          timeout: 5000
+        }
+      );
+    }
+
+    function updateUI() {
+      document.getElementById('foodName').textContent = deliveryData.food_name;
+      document.getElementById('foodQty').textContent = `Qty: ${deliveryData.quantity}`;
+      if(deliveryData.volunteer_name) {
+        document.getElementById('volName').textContent = deliveryData.volunteer_name;
+        document.getElementById('volPhone').textContent = deliveryData.volunteer_phone;
+        
+        if (deliveryData.vehicle_type && deliveryData.vehicle_number) {
+          document.getElementById('volVehicleDetails').style.display = 'block';
+          document.getElementById('volVehicleType').textContent = deliveryData.vehicle_type;
+          document.getElementById('volVehicleNumber').textContent = deliveryData.vehicle_number;
+        }
+
+        if (deliveryData.profile_photo_path) {
+          const photoEl = document.getElementById('volPhoto');
+          photoEl.src = deliveryData.profile_photo_path;
+          photoEl.style.display = 'block';
+        } else {
+          // You could show a default avatar if desired
+          document.getElementById('volPhoto').style.display = 'block';
+        }
+      }
+
+      const steps = ['Pickup Requested', 'Volunteer Assigned', 'Food Picked Up', 'On the Way', 'Delivered'];
+      let currentIdx = steps.indexOf(deliveryData.delivery_status);
+      
+      document.querySelectorAll('.timeline-item').forEach((item, idx) => {
+        item.classList.remove('active', 'completed');
+        if(idx < currentIdx) item.classList.add('completed');
+        if(idx === currentIdx) item.classList.add('active');
+      });
+
+      // Always show ETA box if we have a volunteer, just change text
+      if(deliveryData.volunteer_id) {
+        document.getElementById('etaBox').style.display = 'block';
+      }
+    }
+
+    let restLocation, ngoLocation;
+
+    function geocodeAddressesAndPlot() {
+      if(!window.google) return setTimeout(geocodeAddressesAndPlot, 500);
+
+      const geocoder = new google.maps.Geocoder();
+      console.log('📍 Geocoding addresses:', deliveryData.restaurant_address, deliveryData.ngo_address);
+      
+      // Geocode Restaurant
+      geocoder.geocode({ address: deliveryData.restaurant_address }, (results, status) => {
+        if(status === 'OK') {
+          restLocation = results[0].geometry.location;
+          console.log('✅ Restaurant geocoded:', restLocation.toString());
+          if (restaurantMarker) restaurantMarker.setMap(null);
+          restaurantMarker = new google.maps.Marker({
+            position: restLocation,
+            map: map,
+            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png' },
+            title: 'Source: ' + deliveryData.restaurant_name
+          });
+          drawRouteIfReady();
+        } else {
+          console.error('❌ Restaurant geocode failed:', status);
+          document.getElementById('distanceText').innerHTML = `<span style="color:var(--error)">Source address not found: ${deliveryData.restaurant_address}</span>`;
+          document.getElementById('etaBox').style.display = 'block';
+        }
+      });
+
+      // Geocode NGO
+      geocoder.geocode({ address: deliveryData.ngo_address }, (results, status) => {
+        if(status === 'OK') {
+          ngoLocation = results[0].geometry.location;
+          console.log('✅ NGO geocoded:', ngoLocation.toString());
+          if (ngoMarker) ngoMarker.setMap(null);
+          ngoMarker = new google.maps.Marker({
+            position: ngoLocation,
+            map: map,
+            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png' },
+            title: 'Destination: ' + deliveryData.ngo_name
+          });
+          drawRouteIfReady();
+        } else {
+          console.error('❌ NGO geocode failed:', status);
+          document.getElementById('distanceText').innerHTML = `<span style="color:var(--error)">Destination address not found: ${deliveryData.ngo_address}</span>`;
+          document.getElementById('etaBox').style.display = 'block';
+        }
+      });
+    }
+
+    function initSocket() {
+      socket = io();
+      socket.emit('join_delivery', deliveryId);
+
+      socket.on('location_update', (data) => {
+        console.log('📡 Location update received:', data);
+        const lat = parseFloat(data.latitude);
+        const lng = parseFloat(data.longitude);
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        const pos = { lat, lng };
+        if(!volunteerMarker) {
+          volunteerMarker = new google.maps.Marker({
+            position: pos,
+            map: map,
+            icon: { 
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: "#3b82f6",
+              fillOpacity: 1,
+              strokeColor: "white",
+              strokeWeight: 2,
+            },
+            title: 'Volunteer'
+          });
+        } else {
+          volunteerMarker.setPosition(pos);
+        }
+        
+        deliveryData.current_latitude = lat;
+        deliveryData.current_longitude = lng;
+        drawRouteIfReady();
+      });
+
+      socket.on('status_update', (data) => {
+        console.log('📡 Status update received:', data.status);
+        deliveryData.delivery_status = data.status;
+        updateUI();
+        drawRouteIfReady();
+      });
+    }
+
+    function drawRouteIfReady() {
+      if(!directionsService || !restLocation || !ngoLocation) {
+        console.warn('🕒 Waiting for locations to draw route...');
+        return;
+      }
+      
+      // Auto-fit bounds if we just got both locations
+      const bounds = new google.maps.LatLngBounds();
+      bounds.extend(restLocation);
+      bounds.extend(ngoLocation);
+      if (deliveryData.current_latitude && deliveryData.current_longitude) {
+        bounds.extend({ lat: deliveryData.current_latitude, lng: deliveryData.current_longitude });
+      }
+      map.fitBounds(bounds);
+
+      // 1. Draw Static "Full Route" (Restaurant -> NGO)
+      directionsService.route({
+        origin: restLocation,
+        destination: ngoLocation,
+        travelMode: google.maps.TravelMode.DRIVING
+      }, (response, status) => {
+        if(status === 'OK') {
+          console.log('🛣️ Full route calculated.');
+          fullRouteRenderer.setDirections(response);
+        } else {
+          console.error('❌ Full route failed:', status);
+        }
+      });
+
+      // 2. Draw Active Volunteer Leg
+      let origin, destination;
+      let label = "";
+
+      if(deliveryData.delivery_status === 'Volunteer Assigned' && deliveryData.current_latitude) {
+        origin = new google.maps.LatLng(deliveryData.current_latitude, deliveryData.current_longitude);
+        destination = restLocation;
+        label = "Volunteer to Restaurant";
+      } else if(['Food Picked Up', 'On the Way'].includes(deliveryData.delivery_status) && deliveryData.current_latitude) {
+        origin = new google.maps.LatLng(deliveryData.current_latitude, deliveryData.current_longitude);
+        destination = ngoLocation;
+        label = "En Route to Destination";
+      }
+
+      if (origin && destination) {
+        console.log('🚗 Calculating active leg:', label);
+        directionsService.route({
+          origin: origin,
+          destination: destination,
+          travelMode: google.maps.TravelMode.DRIVING
+        }, (response, status) => {
+          if(status === 'OK') {
+            directionsRenderer.setDirections(response);
+            const leg = response.routes[0].legs[0];
+            
+            const distanceKm = leg.distance.value / 1000;
+            const durationText = leg.duration.text
+              .replace('hours', 'h')
+              .replace('hour', 'h')
+              .replace('mins', 'min')
+              .replace('min', 'min');
+
+            document.getElementById('etaBox').style.display = 'block';
+            document.getElementById('etaTime').textContent = durationText;
+            document.getElementById('distanceText').innerHTML = `<strong>${distanceKm.toFixed(1)} km</strong><br><span style="font-size:0.75rem">${label}</span>`;
+          } else {
+            console.error('❌ Active leg routing failed:', status);
+          }
+        });
+      } else {
+        directionsRenderer.setDirections({routes: []});
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initMap);
+  </script>
+</body>
+</html>

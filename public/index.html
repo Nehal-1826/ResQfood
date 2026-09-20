@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResQfood | Turning Surplus Food into Smiles</title>
+  <meta name="description" content="Connecting restaurants with surplus food to NGOs and organizations to reduce waste and feed the needy.">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="navbar__logo">
+        <img src="/images/logo.png" alt="ResQfood Logo">
+      </a>
+      
+      <div class="navbar__links" id="navLinks">
+        <a href="#how-it-works">How It Works</a>
+        <a href="#impact">Our Impact</a>
+        <a href="#partner-ngos">Partner NGOs</a>
+      </div>
+
+      <div class="navbar__actions" id="navActions">
+        <a href="/auth.html" class="btn btn-outline btn-sm">Sign In</a>
+        <a href="/auth.html" class="btn btn-primary btn-sm">Join Now</a>
+        <button class="mobile-menu-btn" onclick="document.getElementById('navLinks').classList.toggle('open')">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero section" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding-top: 8rem; padding-bottom: 6rem; position: relative; overflow: visible; min-height: 80vh; display: flex; align-items: center;">
+    <div class="container">
+      <div class="hero-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
+        <div class="hero__content">
+          <div class="badge badge-available" style="margin-bottom: 1.5rem;">Join the movement</div>
+          <h1 style="color: var(--gray-900); margin-bottom: 1.5rem;">
+            Turn Surplus Food into <span style="color: var(--primary);">Smiles</span>
+          </h1>
+          <p style="font-size: 1.125rem; margin-bottom: 2.5rem; max-width: 500px;">
+            ResQfood seamlessly connects restaurants holding surplus food with trusted NGOs and orphanages. Stop food waste and help feed communities in need.
+          </p>
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="/auth.html?role=restaurant" class="btn btn-outline btn-lg">I'm a Restaurant</a>
+            <a href="/auth.html?role=organization" class="btn btn-outline btn-lg">I'm an NGO</a>
+            <a href="/auth.html?role=volunteer" class="btn btn-outline btn-lg">I'm a Volunteer</a>
+            <a href="/auth.html?role=administrator" class="btn btn-outline btn-lg">I'm Administrator</a>
+          </div>
+        </div>
+        
+        <div class="hero__image" style="position: relative; z-index: 1;">
+          <div style="width: 100%; min-height: 400px; background: linear-gradient(135deg, var(--green-700), var(--green-500)); border-radius: 2rem; box-shadow: var(--shadow-xl); position: relative; overflow: hidden; padding: 3rem; display: flex; flex-direction: column; justify-content: space-between; color: white; isolation: isolate;">
+            <!-- Top Slogan -->
+            <div style="position: relative; z-index: 2;">
+              <div style="font-size: 2.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 1rem; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.15);">
+                Zero Waste.<br>Maximum Impact.
+              </div>
+              <div style="font-size: 1.125rem; color: rgba(255,255,255,0.9); max-width: 80%;">
+                Bridging the gap between surplus food and scarcity.
+              </div>
+            </div>
+            
+            <!-- Bottom Slogan -->
+            <div style="align-self: flex-end; text-align: right; position: relative; z-index: 2;">
+              <div style="font-size: 1.5rem; font-weight: 600; color: #fff;">
+                Feeding communities,
+              </div>
+              <div style="font-size: 1.5rem; font-weight: 600; color: var(--green-100);">
+                not landfills.
+              </div>
+            </div>
+            
+            <!-- Decorative background icon -->
+            <svg style="position: absolute; right: -20px; bottom: -20px; width: 220px; height: 220px; opacity: 0.08; transform: rotate(-15deg); z-index: 1;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- How it Works -->
+  <section id="how-it-works" class="section">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 4rem;">
+        <h2 style="color: var(--gray-900); margin-bottom: 1rem;">How ResQfood Works</h2>
+        <p style="max-width: 600px; margin: 0 auto;">A simple, transparent process to ensure surplus food reaches those who need it most, safely and efficiently.</p>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
+        <div class="card" style="padding: 2.5rem 2rem; text-align: center;">
+          <div style="width: 64px; height: 64px; background: var(--green-50); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+            <img src="/images/logo.png" alt="Logo" style="width: 40px; height: auto;">
+          </div>
+          <h4 style="margin-bottom: 1rem; color: var(--gray-900);">1. Restaurant Posts</h4>
+          <p style="font-size: 0.9rem;">Restaurants log in and quickly list available surplus food with quantity and expiry details.</p>
+        </div>
+        
+        <div class="card" style="padding: 2.5rem 2rem; text-align: center;">
+          <div style="width: 64px; height: 64px; background: var(--orange-50); color: var(--orange-500); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h4 style="margin-bottom: 1rem; color: var(--gray-900);">2. NGO Requests</h4>
+          <p style="font-size: 0.9rem;">Verified NGOs browse live listings and request food that matches their current needs.</p>
+        </div>
+        
+        <div class="card" style="padding: 2.5rem 2rem; text-align: center;">
+          <div style="width: 64px; height: 64px; background: var(--green-50); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
+          <h4 style="margin-bottom: 1rem; color: var(--gray-900);">3. Easy Pickup</h4>
+          <p style="font-size: 0.9rem;">Once approved, the NGO collects the food and confirms the pickup in the dashboard.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section" style="background: var(--primary); color: white; text-align: center; padding: 6rem 0;">
+    <div class="container">
+      <h2 style="margin-bottom: 1.5rem;">Ready to make an impact?</h2>
+      <p style="max-width: 600px; margin: 0 auto 2.5rem; color: var(--green-100); font-size: 1.125rem;">Join hundreds of restaurants and organizations working together to build a zero-waste future.</p>
+      <a href="/auth.html" class="btn btn-accent btn-lg" style="padding: 1rem 3rem;">Get Started Today</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <a href="/" class="navbar__logo" style="color: var(--white);">
+            <img src="/images/logo.png" alt="ResQfood Logo">
+          </a>
+          <p>A smart platform connecting restaurants with surplus food to NGOs and orphanages. Minimizing waste, maximizing impact.</p>
+        </div>
+        <div class="footer__col">
+          <h5>Platform</h5>
+          <a href="#">For Restaurants</a>
+          <a href="#">For NGOs</a>
+          <a href="#">Success Stories</a>
+        </div>
+        <div class="footer__col">
+          <h5>Company</h5>
+          <a href="#">About Us</a>
+          <a href="#">Contact Support</a>
+          <a href="#">Privacy Policy</a>
+        </div>
+      </div>
+      <div class="footer__divider"></div>
+      <div class="footer__bottom">
+        <p>&copy; 2024 ResQfood. All rights reserved.</p>
+        <p>Built with <span>♥</span> to stop food waste.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if logged in to update navbar
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      
+      if (token && user) {
+        let dashboardUrl = '/restaurant-dashboard';
+        if (user.role === 'organization') dashboardUrl = '/ngo-dashboard';
+        if (user.role === 'administrator') dashboardUrl = '/admin-dashboard';
+        if (user.role === 'volunteer') dashboardUrl = '/volunteer-dashboard';
+        
+        document.getElementById('navActions').innerHTML = `
+          <a href="${dashboardUrl}" class="btn btn-primary btn-sm">Go to Dashboard →</a>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>

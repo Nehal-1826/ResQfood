@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Available Surplus Food | ResQfood</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/listings.css">
+</head>
+<body style="background: var(--gray-50); min-height: 100vh; display: flex; flex-direction: column;">
+
+  <div id="toast-container"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar" style="background: var(--white); box-shadow: var(--shadow-sm);">
+    <div class="container">
+      <a href="/" class="navbar__logo">
+        <img src="/images/logo.png" alt="ResQfood Logo">
+      </a>
+      
+      <div class="navbar__actions" id="navActions">
+        <!-- Injected via JS based on auth -->
+      </div>
+    </div>
+  </nav>
+
+  <main style="flex: 1; padding: 3rem 0;">
+    <div class="container">
+      
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2rem; border-bottom: 1px solid var(--gray-200); padding-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="color: var(--gray-900);">Available Food Donations</h2>
+          <p style="color: var(--gray-500); margin-top: 0.25rem;">Browse fresh surplus food from our partner restaurants.</p>
+        </div>
+        <div>
+          <a href="/ngo-dashboard.html" class="btn btn-outline" id="backToDashBtn" style="display:none;">Back to Dashboard</a>
+        </div>
+      </div>
+
+      <!-- Listings Grid -->
+      <div id="listingsLoader" style="text-align: center; padding: 4rem 0;">
+        <div class="spinner" style="width: 40px; height: 40px; border-width: 4px; border-top-color: var(--primary); margin: 0 auto 1rem;"></div>
+        <p style="color: var(--gray-500);">Loading available food...</p>
+      </div>
+
+      <div class="listings-grid" id="listingsContainer" style="display: none;">
+        <!-- Food Cards injected here by listings.js -->
+      </div>
+
+    </div>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/main.js"></script>
+  <script src="/js/listings.js"></script>
+</body>
+</html>

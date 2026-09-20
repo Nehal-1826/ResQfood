@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volunteer Dashboard | ResQfood</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    body { background: var(--gray-50); height: 100vh; display: flex; flex-direction: column; overflow: hidden;}
+    .container { max-width: 600px; padding: 1rem; margin: 0 auto; height: 100%; display: flex; flex-direction: column; }
+    
+    .panel { background: white; border-radius: 12px; border: 1px solid var(--gray-200); padding: 1.5rem; margin-bottom: 1rem; box-shadow: var(--shadow-sm); }
+    #loginSection { display: flex; flex-direction: column; justify-content: center; height: 100%; }
+    #requestsSection, #activeDeliverySection { display: none; flex: 1; overflow-y: auto; padding-bottom: 2rem;}
+    
+    .request-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    
+    #map { width: 100%; height: 300px; border-radius: 8px; margin: 1rem 0; background: var(--gray-200); }
+    
+    .status-btn-group { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar" style="background: white; box-shadow: var(--shadow-sm);">
+    <div class="container" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; height: auto;">
+      <a href="/" class="navbar__logo">
+        <img src="/images/logo.png" alt="ResQfood Logo">
+        <span>Volunteer</span>
+      </a>
+      <div id="userInfo" style="font-size: 0.9rem; font-weight: 500; color: var(--primary);"></div>
+    </div>
+  </nav>
+
+  <div class="container">
+    
+    <!-- Loading / Fallback Section -->
+    <div id="loginSection" class="panel" style="display: none;">
+       <div class="empty-state">Loading Tracking Data...</div>
+    </div>
+
+    <!-- Available Requests Section -->
+    <div id="requestsSection">
+      <h3 style="margin: 1rem 0;">Available Deliveries</h3>
+      <div id="availableList"></div>
+    </div>
+
+    <!-- Active Delivery Section -->
+    <div id="activeDeliverySection">
+      <div class="panel">
+        <h3 id="delTitle">Active Delivery</h3>
+        <p id="delStatus" style="font-size: 0.9rem; color: var(--green-600); font-weight: bold; margin-bottom: 1rem;"></p>
+        
+        <div id="map"></div>
+        
+        <div class="status-btn-group">
+          <button class="btn btn-outline" id="btnArrivedRest" onclick="updateStatus('picked_up')">I have picked up the food</button>
+          <button class="btn btn-primary" id="btnOnWay" onclick="updateStatus('on_the_way')" style="display:none;">I am on the way</button>
+          <button class="btn btn-success" id="btnDelivered" onclick="updateStatus('delivered')" style="display:none;">Food is Delivered!</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Includes central API and main JS -->
+  <script src="/js/api.js"></script>
+  <script src="/js/main.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    if(!app.isAuthenticated()) window.location.href = '/auth.html';
+    
+    let user = app.getUser();
+    if(user.role !== 'volunteer') window.location.href = '/auth.html';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeDeliveryId = urlParams.get('id');
+
+    let watchId = null;
+    let map, marker, directionsService, directionsRenderer, fullRouteRenderer;
+    let restLoc, ngoLoc;
+    let currentDelivery = null;
+    let socket;
+    
+    document.getElementById('userInfo').textContent = user.full_name || user.name;
+
+    if (!activeDeliveryId) {
+       document.getElementById('loginSection').style.display = 'block';
+       document.getElementById('loginSection').innerHTML = '<div class="empty-state">No delivery ID provided.<br><a href="/volunteer-dashboard.html" class="btn btn-primary" style="margin-top:1rem">Go to Dashboard</a></div>';
+    } else {
+       setupActiveDelivery();
+    }
+
+    function showSection(id) {
+      ['loginSection', 'requestsSection', 'activeDeliverySection'].forEach(s => {
+        document.getElementById(s).style.display = s === id ? 'block' : 'none';
+      });
+    }
+
+    async function loadAvailableRequests() {
+      try {
+        const res = await authFetch('/deliveries/volunteer/available');
+        const list = document.getElementById('availableList');
+        
+        if(!res.data || res.data.length === 0) {
+          list.innerHTML = `<div class="panel" style="text-align:center; color: var(--gray-500);">No deliveries available right now.</div>`;
+          return;
+        }
+
+        list.innerHTML = res.data.map(req => `
+          <div class="request-card">
+            <h4 style="margin-bottom:0.5rem">${req.food_name} (${req.quantity})</h4>
+            <div style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.2rem">
+              <strong>From:</strong> ${req.restaurant_name} <br> <span style="font-size:0.75rem">${req.restaurant_address}</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 1rem">
+              <strong>To:</strong> ${req.ngo_name} <br> <span style="font-size:0.75rem">${req.ngo_address}</span>
+            </div>
+            <button class="btn btn-primary btn-sm btn-block" onclick="acceptDelivery(${req.request_id})">Accept Delivery</button>
+          </div>
+        `).join('');
+      } catch(err) { console.error(err); }
+    }
+
+    async function acceptDelivery(reqId) {
+      try {
+        const res = await authFetch('/deliveries/start', {
+          method: 'POST',
+          body: JSON.stringify({ request_id: reqId, volunteer_id: user.id || user.volunteer_id })
+        });
+
+        if(res.success) {
+          activeDeliveryId = res.delivery_id;
+          window.location.search = `?id=${activeDeliveryId}`;
+        } else {
+          alert('Failed to accept delivery: ' + res.message);
+        }
+      } catch(err) { alert('Error starting delivery'); }
+    }
+
+    async function setupActiveDelivery() {
+      showSection('activeDeliverySection');
+      document.getElementById('delStatus').textContent = 'Loading Delivery...';
+      
+      const res = await authFetch(`/deliveries/${activeDeliveryId}`);
+      if(res.success) {
+        currentDelivery = res.data;
+        document.getElementById('delTitle').textContent = `Delivery: ${currentDelivery.food_name}`;
+        
+        // Setup initial buttons
+        if(currentDelivery.delivery_status === 'picked_up') {
+           document.getElementById('btnArrivedRest').style.display = 'none';
+           document.getElementById('btnOnWay').style.display = 'block';
+        } else if (currentDelivery.delivery_status === 'on_the_way') {
+           document.getElementById('btnArrivedRest').style.display = 'none';
+           document.getElementById('btnDelivered').style.display = 'block';
+        } else if (currentDelivery.delivery_status === 'delivered') {
+           document.getElementById('delStatus').textContent = 'Completed';
+           document.getElementById('btnArrivedRest').style.display = 'none';
+        } else {
+           document.getElementById('delStatus').textContent = 'Assigned: Head to Restaurant';
+           document.getElementById('btnArrivedRest').style.display = 'block';
+        }
+      } else {
+        alert('Could not load delivery data');
+        return;
+      }
+
+      // Init Map
+      if(!map) {
+        const keyRes = await fetch('/api/config/maps').then(r => r.json());
+        if(keyRes.apiKey && !window.google) {
+          await new Promise(resolve => {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${keyRes.apiKey}`;
+            script.onload = resolve;
+            document.head.appendChild(script);
+          });
+        }
+        
+        if(window.google) {
+          map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 15, center: { lat: 0, lng: 0 }, mapTypeControl: false, streetViewControl: false
+          });
+          directionsService = new google.maps.DirectionsService();
+          
+          fullRouteRenderer = new google.maps.DirectionsRenderer({
+            map, suppressMarkers: true,
+            polylineOptions: { strokeColor: '#94a3b8', strokeOpacity: 0.5, strokeWeight: 4 }
+          });
+          
+          directionsRenderer = new google.maps.DirectionsRenderer({
+            map, suppressMarkers: true,
+            polylineOptions: { strokeColor: '#10b981', strokeWeight: 6 }
+          });
+        }
+      }
+
+      if (currentDelivery) {
+        const geocoder = new google.maps.Geocoder();
+        console.log('📍 Geocoding addresses:', currentDelivery.restaurant_address, currentDelivery.ngo_address);
+        
+        geocoder.geocode({ address: currentDelivery.restaurant_address }, (results, status) => {
+          if(status === 'OK') {
+            restLoc = results[0].geometry.location;
+            console.log('✅ Restaurant geocoded:', restLoc.toString());
+            new google.maps.Marker({ position: restLoc, map, icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png' });
+            plotStaticRoute();
+          } else {
+            console.error('❌ Restaurant geocode failed:', status);
+          }
+        });
+        geocoder.geocode({ address: currentDelivery.ngo_address }, (results, status) => {
+          if(status === 'OK') {
+            ngoLoc = results[0].geometry.location;
+            console.log('✅ NGO geocoded:', ngoLoc.toString());
+            new google.maps.Marker({ position: ngoLoc, map, icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png' });
+            plotStaticRoute();
+          } else {
+            console.error('❌ NGO geocode failed:', status);
+          }
+        });
+      }
+
+      startTracking();
+    }
+
+    function plotStaticRoute() {
+      if(directionsService && restLoc && ngoLoc) {
+        console.log('🛣️ Plotting static full route');
+        directionsService.route({
+          origin: restLoc, destination: ngoLoc, travelMode: google.maps.TravelMode.DRIVING
+        }, (res, status) => {
+          if(status === 'OK') {
+            fullRouteRenderer.setDirections(res);
+          } else {
+            console.error('❌ Static route failed:', status);
+          }
+        });
+
+        // Fit bounds for the first time
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend(restLoc);
+        bounds.extend(ngoLoc);
+        map.fitBounds(bounds);
+      }
+    }
+
+    function startTracking() {
+      if (!navigator.geolocation) return alert("Geolocation is not supported by your browser");
+
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const pos = { lat, lng };
+          console.log('📡 Live volunteer position:', pos);
+
+          if(map && !marker) {
+            marker = new google.maps.Marker({
+              position: pos, map,
+              icon: { 
+                path: google.maps.SymbolPath.CIRCLE, scale: 7, 
+                fillColor: "#3b82f6", fillOpacity: 1, 
+                strokeColor: "white", strokeWeight: 2 
+              }
+            });
+            map.setCenter(pos);
+          } else if(marker) {
+            marker.setPosition(pos);
+          }
+
+          updateLiveRoute(pos);
+
+          // Send to server
+          authFetch('/deliveries/update-location', {
+            method: 'POST',
+            body: JSON.stringify({ delivery_id: activeDeliveryId, latitude: lat, longitude: lng, volunteer_id: user.id || user.volunteer_id })
+          });
+        },
+        (error) => console.error('📍 Geolocation error:', error),
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 5000 }
+      );
+    }
+
+    function updateLiveRoute(pos) {
+      if(!directionsService || !currentDelivery || !restLoc || !ngoLoc) return;
+
+      let dest = null;
+      if(currentDelivery.delivery_status === 'Volunteer Assigned') dest = restLoc;
+      else if(['Food Picked Up', 'On the Way'].includes(currentDelivery.delivery_status)) dest = ngoLoc;
+
+      if(dest) {
+        console.log('🚗 Updating live leg to:', dest.toString());
+        directionsService.route({
+          origin: pos, destination: dest, travelMode: google.maps.TravelMode.DRIVING
+        }, (res, status) => {
+          if(status === 'OK') {
+            directionsRenderer.setDirections(res);
+            const leg = res.routes[0].legs[0];
+            const km = (leg.distance.value / 1000).toFixed(1);
+            const time = leg.duration.text.replace('mins', 'min').replace('hours', 'h');
+            document.getElementById('delStatus').innerHTML = `${currentDelivery.delivery_status}<br><span style="font-size:0.8rem; color:var(--gray-500)">${km} km · ${time} remaining</span>`;
+            
+            // Keep volunteer and destination in view
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(pos);
+            bounds.extend(dest);
+            map.fitBounds(bounds);
+          } else {
+            console.error('❌ Live leg routing failed:', status);
+          }
+        });
+      }
+    }
+
+    async function updateStatus(status) {
+      document.getElementById('btnArrivedRest').style.display = 'none';
+      document.getElementById('btnOnWay').style.display = 'none';
+      document.getElementById('btnDelivered').style.display = 'none';
+
+      try {
+        await authFetch('/deliveries/update-status', {
+          method: 'POST',
+          body: JSON.stringify({ delivery_id: activeDeliveryId, status })
+        });
+
+        currentDelivery.delivery_status = status;
+        document.getElementById('delStatus').textContent = status;
+
+        if(status === 'Food Picked Up') {
+          document.getElementById('btnOnWay').style.display = 'block';
+        } else if(status === 'On the Way') {
+          document.getElementById('btnDelivered').style.display = 'block';
+        } else if(status === 'Delivered') {
+          if(watchId) navigator.geolocation.clearWatch(watchId);
+          app.showToast('Awesome! Thanks for delivering hope.', 'success');
+          setTimeout(() => {
+             window.location.href = '/volunteer-dashboard.html';
+          }, 2000);
+        }
+      } catch(err) { alert('Error updating status'); }
+    }
+  </script>
+</body>
+</html>

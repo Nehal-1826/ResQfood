@@ -1,0 +1,24 @@
+=== 17-09-2026 18:13:13.99 : reset v3 (shared memory) === 
+SUCCESS: The process "mysqld.exe" with PID 28232 has been terminated.
+[SC] ChangeServiceConfig SUCCESS
+The service is not responding to the control function.
+
+More help is available by typing NET HELPMSG 2186.
+
+--- alter via shared memory --- 
+--- restore and restart --- 
+[SC] ChangeServiceConfig SUCCESS
+The MySQL80 service is not started.
+
+More help is available by typing NET HELPMSG 3521.
+
+SUCCESS: The process "mysqld.exe" with PID 11012 has been terminated.
+The service is not responding to the control function.
+
+More help is available by typing NET HELPMSG 2186.
+
+--- verify over TCP --- 
+mysql: [Warning] Using a password on the command line interface can be insecure.
+result
+TCP RESET OK
+=== done 17-09-2026 18:19:40.24 === 

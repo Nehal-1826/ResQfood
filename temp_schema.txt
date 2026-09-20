@@ -1,0 +1,13 @@
+CREATE TABLE `delivery_assignments` (
+  `assignment_id` int NOT NULL AUTO_INCREMENT,
+  `request_id` int NOT NULL,
+  `volunteer_id` int NOT NULL,
+  `assignment_status` enum('assigned','picked_up','on_the_way','delivered') DEFAULT 'assigned',
+  `accepted_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `delivered_time` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`assignment_id`),
+  KEY `request_id` (`request_id`),
+  KEY `volunteer_id` (`volunteer_id`),
+  CONSTRAINT `delivery_assignments_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `food_requests` (`request_id`) ON DELETE CASCADE,
+  CONSTRAINT `delivery_assignments_ibfk_2` FOREIGN KEY (`volunteer_id`) REFERENCES `delivery_volunteers` (`volunteer_id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci

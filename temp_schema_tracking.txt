@@ -1,0 +1,20 @@
+CREATE TABLE `delivery_tracking` (
+  `delivery_id` int NOT NULL AUTO_INCREMENT,
+  `request_id` int NOT NULL,
+  `restaurant_id` int NOT NULL,
+  `organization_id` int NOT NULL,
+  `volunteer_id` int DEFAULT NULL,
+  `current_latitude` decimal(10,8) DEFAULT NULL,
+  `current_longitude` decimal(11,8) DEFAULT NULL,
+  `delivery_status` enum('available','accepted','volunteer_assigned','picked_up','on_the_way','delivered','rejected') DEFAULT 'available',
+  `last_updated_timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`delivery_id`),
+  UNIQUE KEY `request_id` (`request_id`),
+  KEY `restaurant_id` (`restaurant_id`),
+  KEY `organization_id` (`organization_id`),
+  KEY `volunteer_id` (`volunteer_id`),
+  CONSTRAINT `delivery_tracking_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `food_requests` (`request_id`) ON DELETE CASCADE,
+  CONSTRAINT `delivery_tracking_ibfk_2` FOREIGN KEY (`restaurant_id`) REFERENCES `restaurants` (`restaurant_id`) ON DELETE CASCADE,
+  CONSTRAINT `delivery_tracking_ibfk_3` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`organization_id`) ON DELETE CASCADE,
+  CONSTRAINT `delivery_tracking_ibfk_4` FOREIGN KEY (`volunteer_id`) REFERENCES `volunteers` (`volunteer_id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
