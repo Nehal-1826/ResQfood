@@ -86,6 +86,7 @@ app.get('/request-tracking',    (req, res) => res.sendFile(path.join(publicDir, 
 app.get('/pickup-confirmation', (req, res) => res.sendFile(path.join(publicDir, 'pickup-confirmation.html')));
 app.get('/delivery-tracking',   (req, res) => res.sendFile(path.join(publicDir, 'delivery-tracking.html')));
 app.get('/volunteer-tracking',  (req, res) => res.sendFile(path.join(publicDir, 'volunteer-tracking.html')));
+app.get(['/favicon.ico', '/favicon.png'], (req, res) => res.sendFile(path.join(publicDir, 'images/logo.png')));
 
 // ─── API Config Route ──────────────────────────────────────────────────────────
 app.get('/api/config/maps', (req, res) => {
@@ -194,13 +195,6 @@ async function startServer() {
       process.exit(1);
     }
   }
-}
-
-// Trigger DB initialization for serverless cold-starts
-if (process.env.VERCEL) {
-  initializeDatabase().catch(err => {
-    console.warn('⚠️ Serverless DB init notice:', err.message);
-  });
 }
 
 // Export Express app for Vercel / serverless runtimes

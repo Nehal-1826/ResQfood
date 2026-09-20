@@ -46,6 +46,15 @@ function getDbConfig() {
   };
 }
 
+function hasDbConfig() {
+  return Boolean(
+    process.env.DATABASE_URL ||
+    process.env.MYSQL_URL ||
+    (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1') ||
+    (!process.env.VERCEL) // locally, localhost is valid
+  );
+}
+
 let pool = null;
 let initPromise = null;
 let isInitialized = false;
@@ -63,12 +72,17 @@ async function initializeDatabase() {
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
+    if (!hasDbConfig() && process.env.VERCEL) {
+      console.warn('⚠️ No remote database configured in Vercel environment variables (DB_HOST or DATABASE_URL).');
+      return getPool();
+    }
+
     const currentPool = getPool();
     const config = getDbConfig();
 
     try {
       // If local environment without SSL, attempt to create database if missing
-      if (!config.ssl && (config.host === 'localhost' || config.host === '127.0.0.1')) {
+      if (!process.env.VERCEL && !config.ssl && (config.host === 'localhost' || config.host === '127.0.0.1')) {
         try {
           const tempConn = await mysql.createConnection({
             host: config.host,
