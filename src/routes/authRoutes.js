@@ -53,7 +53,8 @@ function validatePassword(password) {
 }
 
 function generateJWT(payload) {
-  return jwt.sign(payload, process.env.JWT_SECRET, {
+  const jwtSecret = process.env.JWT_SECRET || 'resqfood_jwt_secret_key_default_2026';
+  return jwt.sign(payload, jwtSecret, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 }

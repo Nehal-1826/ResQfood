@@ -8,7 +8,8 @@ function authMiddleware(req, res, next) {
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const jwtSecret = process.env.JWT_SECRET || 'resqfood_jwt_secret_key_default_2026';
+    const decoded = jwt.verify(token, jwtSecret);
     // Reject legacy tokens that don't have a role assigned
     if (!decoded.role) {
       return res.status(401).json({ success: false, message: 'Session expired or legacy token. Please log in again.' });
