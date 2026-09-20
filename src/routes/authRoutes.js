@@ -7,19 +7,30 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const { getPool } = require('../db');
+const fs = require('fs');
+const os = require('os');
 const { validateEmailDomain, sendVerificationEmail } = require('../services/emailService');
 
 const router = express.Router();
 
+function getUploadDestination() {
+  const dir = process.env.VERCEL 
+    ? path.join(os.tmpdir(), 'uploads') 
+    : path.join(__dirname, '../../public/uploads');
+  if (!fs.existsSync(dir)) {
+    try { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}
+  }
+  return dir;
+}
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Save to public/uploads directory
-    cb(null, path.join(__dirname, '../../public/uploads/'))
+    cb(null, getUploadDestination());
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname))
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 const upload = multer({ 

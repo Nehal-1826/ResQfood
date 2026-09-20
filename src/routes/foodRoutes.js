@@ -1,15 +1,27 @@
 const express = require('express');
 const path = require('path');
 const multer = require('multer');
+const fs = require('fs');
+const os = require('os');
 const { getPool } = require('../db');
 const { authMiddleware, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+function getUploadDestination() {
+  const dir = process.env.VERCEL 
+    ? path.join(os.tmpdir(), 'uploads') 
+    : path.join(__dirname, '../../public/uploads');
+  if (!fs.existsSync(dir)) {
+    try { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}
+  }
+  return dir;
+}
+
 // Multer setup for food image uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../public/uploads'));
+    cb(null, getUploadDestination());
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);

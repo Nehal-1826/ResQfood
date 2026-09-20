@@ -1,3 +1,5 @@
+'use strict';
+
 require('dotenv').config();
 const express   = require('express');
 const cors      = require('cors');
@@ -9,9 +11,9 @@ const { Server } = require('socket.io');
 
 const { initializeDatabase } = require('./db');
 
-const app  = express();
+const app    = express();
 const server = http.createServer(app);
-const io = new Server(server, {
+const io     = new Server(server, {
   cors: { origin: '*' }
 });
 
@@ -41,32 +43,49 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ─── Static Files ──────────────────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, '../public')));
+const publicDir = path.join(__dirname, '../public');
+app.use(express.static(publicDir));
+
+// Fallback upload directory for serverless environments (e.g. Vercel)
+const tmpUploadsDir = path.join(os.tmpdir(), 'uploads');
+if (!fs.existsSync(tmpUploadsDir)) {
+  try { fs.mkdirSync(tmpUploadsDir, { recursive: true }); } catch (e) {}
+}
+app.use('/uploads', express.static(tmpUploadsDir));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
-app.use('/api/auth',    require('./routes/authRoutes'));
-app.use('/api/auth',    require('./routes/passwordRoutes'));
-app.use('/api/foods',   require('./routes/foodRoutes'));
-app.use('/api/requests',require('./routes/requestRoutes'));
-app.use('/api/pickups', require('./routes/pickupRoutes'));
-app.use('/api/admin',   require('./routes/adminRoutes'));
+app.use('/api/auth',       require('./routes/authRoutes'));
+app.use('/api/auth',       require('./routes/passwordRoutes'));
+app.use('/api/foods',      require('./routes/foodRoutes'));
+app.use('/api/requests',   require('./routes/requestRoutes'));
+app.use('/api/pickups',    require('./routes/pickupRoutes'));
+app.use('/api/admin',      require('./routes/adminRoutes'));
 app.use('/api/deliveries', require('./routes/deliveryRoutes'));
-app.use('/api/profile', require('./routes/profileRoutes'));
+app.use('/api/profile',    require('./routes/profileRoutes'));
+
+// ─── Health check route ────────────────────────────────────────────────────────
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    environment: process.env.VERCEL ? 'vercel-serverless' : 'standalone',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // ─── HTML Page Routes ──────────────────────────────────────────────────────────
-app.get('/',                    (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
-app.get('/auth',                (req, res) => res.sendFile(path.join(__dirname, '../public/auth.html')));
-app.get('/forgot-password',     (req, res) => res.sendFile(path.join(__dirname, '../public/forgot-password.html')));
-app.get('/reset-password',      (req, res) => res.sendFile(path.join(__dirname, '../public/reset-password.html')));
-app.get('/restaurant-dashboard',(req, res) => res.sendFile(path.join(__dirname, '../public/restaurant-dashboard.html')));
-app.get('/ngo-dashboard',       (req, res) => res.sendFile(path.join(__dirname, '../public/ngo-dashboard.html')));
-app.get('/admin-dashboard',     (req, res) => res.sendFile(path.join(__dirname, '../public/admin-dashboard.html')));
-app.get('/volunteer-dashboard', (req, res) => res.sendFile(path.join(__dirname, '../public/volunteer-dashboard.html')));
-app.get('/food-listings',       (req, res) => res.sendFile(path.join(__dirname, '../public/food-listings.html')));
-app.get('/request-tracking',    (req, res) => res.sendFile(path.join(__dirname, '../public/request-tracking.html')));
-app.get('/pickup-confirmation', (req, res) => res.sendFile(path.join(__dirname, '../public/pickup-confirmation.html')));
-app.get('/delivery-tracking',   (req, res) => res.sendFile(path.join(__dirname, '../public/delivery-tracking.html')));
-app.get('/volunteer-tracking',  (req, res) => res.sendFile(path.join(__dirname, '../public/volunteer-tracking.html')));
+app.get('/',                    (req, res) => res.sendFile(path.join(publicDir, 'index.html')));
+app.get('/auth',                (req, res) => res.sendFile(path.join(publicDir, 'auth.html')));
+app.get('/forgot-password',     (req, res) => res.sendFile(path.join(publicDir, 'forgot-password.html')));
+app.get('/reset-password',      (req, res) => res.sendFile(path.join(publicDir, 'reset-password.html')));
+app.get('/restaurant-dashboard',(req, res) => res.sendFile(path.join(publicDir, 'restaurant-dashboard.html')));
+app.get('/ngo-dashboard',       (req, res) => res.sendFile(path.join(publicDir, 'ngo-dashboard.html')));
+app.get('/admin-dashboard',     (req, res) => res.sendFile(path.join(publicDir, 'admin-dashboard.html')));
+app.get('/volunteer-dashboard', (req, res) => res.sendFile(path.join(publicDir, 'volunteer-dashboard.html')));
+app.get('/food-listings',       (req, res) => res.sendFile(path.join(publicDir, 'food-listings.html')));
+app.get('/request-tracking',    (req, res) => res.sendFile(path.join(publicDir, 'request-tracking.html')));
+app.get('/pickup-confirmation', (req, res) => res.sendFile(path.join(publicDir, 'pickup-confirmation.html')));
+app.get('/delivery-tracking',   (req, res) => res.sendFile(path.join(publicDir, 'delivery-tracking.html')));
+app.get('/volunteer-tracking',  (req, res) => res.sendFile(path.join(publicDir, 'volunteer-tracking.html')));
 
 // ─── API Config Route ──────────────────────────────────────────────────────────
 app.get('/api/config/maps', (req, res) => {
@@ -75,6 +94,9 @@ app.get('/api/config/maps', (req, res) => {
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {
+  if (req.accepts('html')) {
+    return res.status(404).sendFile(path.join(publicDir, 'index.html'));
+  }
   res.status(404).json({ success: false, message: 'Route not found.' });
 });
 
@@ -98,25 +120,30 @@ function getLocalIP() {
 
 /**
  * Update a key=value pair in the .env file.
- * Adds the line if missing, updates it if it exists.
+ * Safe for serverless (skips if in Vercel or read-only filesystem).
  */
 function updateEnvFile(key, value) {
-  const envPath = path.join(__dirname, '../.env');
-  let content = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
-  const regex = new RegExp(`^${key}=.*$`, 'm');
-  if (regex.test(content)) {
-    content = content.replace(regex, `${key}=${value}`);
-  } else {
-    content = content.trimEnd() + `\n${key}=${value}\n`;
+  if (process.env.VERCEL) return;
+  try {
+    const envPath = path.join(__dirname, '../.env');
+    let content = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+    const regex = new RegExp(`^${key}=.*$`, 'm');
+    if (regex.test(content)) {
+      content = content.replace(regex, `${key}=${value}`);
+    } else {
+      content = content.trimEnd() + `\n${key}=${value}\n`;
+    }
+    fs.writeFileSync(envPath, content, 'utf8');
+  } catch (err) {
+    // Non-fatal if filesystem is read-only
   }
-  fs.writeFileSync(envPath, content, 'utf8');
 }
 
 /**
- * Try to start an ngrok tunnel.
- * Returns the public URL, or null if NGROK_AUTH_TOKEN is not set.
+ * Try to start an ngrok tunnel (local dev only).
  */
 async function startNgrokTunnel(port) {
+  if (process.env.VERCEL) return null;
   const token = process.env.NGROK_AUTH_TOKEN;
   if (!token) return null;
 
@@ -133,25 +160,20 @@ async function startNgrokTunnel(port) {
   }
 }
 
-// ─── Start Server ─────────────────────────────────────────────────────────────
+// ─── Start Standalone Server ──────────────────────────────────────────────────
 async function startServer() {
   try {
     await initializeDatabase();
 
     server.listen(PORT, async () => {
-      // 1. Detect local IP and always update APP_URL with it first
       const localIP  = getLocalIP();
       const localUrl = `http://${localIP}:${PORT}`;
-
-      // 2. Try to start ngrok for a public URL
       const publicUrl = await startNgrokTunnel(PORT);
+      const appUrl = publicUrl || process.env.APP_URL || localUrl;
 
-      // 3. Use ngrok URL if available, otherwise fall back to LAN IP
-      const appUrl = publicUrl || localUrl;
-      process.env.APP_URL = appUrl;       // update in-process immediately
-      updateEnvFile('APP_URL', appUrl);   // persist to .env for next restart
+      process.env.APP_URL = appUrl;
+      updateEnvFile('APP_URL', appUrl);
 
-      // ── Print startup banner ──────────────────────────────────────────────
       console.log('\n╔══════════════════════════════════════════════════════════╗');
       console.log('║            🌉  RESQFOOD SERVER READY                    ║');
       console.log('╠══════════════════════════════════════════════════════════╣');
@@ -167,9 +189,24 @@ async function startServer() {
       console.log('╚══════════════════════════════════════════════════════════╝\n');
     });
   } catch (err) {
-    console.error('❌ Failed to start server:', err.message);
-    process.exit(1);
+    console.error('❌ Failed to start standalone server:', err.message);
+    if (!process.env.VERCEL) {
+      process.exit(1);
+    }
   }
 }
 
-startServer();
+// Trigger DB initialization for serverless cold-starts
+if (process.env.VERCEL) {
+  initializeDatabase().catch(err => {
+    console.warn('⚠️ Serverless DB init notice:', err.message);
+  });
+}
+
+// Export Express app for Vercel / serverless runtimes
+module.exports = app;
+
+// Run standalone server if executed directly (e.g. `node src/server.js` or `npm start`)
+if (require.main === module) {
+  startServer();
+}
