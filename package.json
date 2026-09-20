@@ -2,7 +2,7 @@
   "name": "resqfood",
   "version": "1.0.0",
   "description": "ResQfood - Connecting restaurants with surplus food to NGOs and organizations in need",
-  "main": "src/server.js",
+  "main": "api/index.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js"

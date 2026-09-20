@@ -164,7 +164,9 @@ async function startNgrokTunnel(port) {
 // ─── Start Standalone Server ──────────────────────────────────────────────────
 async function startServer() {
   try {
-    await initializeDatabase();
+    initializeDatabase().catch(err => {
+      console.warn('⚠️ Standalone DB initialization notice:', err.message);
+    });
 
     server.listen(PORT, async () => {
       const localIP  = getLocalIP();
@@ -191,9 +193,6 @@ async function startServer() {
     });
   } catch (err) {
     console.error('❌ Failed to start standalone server:', err.message);
-    if (!process.env.VERCEL) {
-      process.exit(1);
-    }
   }
 }
 
